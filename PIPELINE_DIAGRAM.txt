@@ -1,0 +1,248 @@
+================================================================================
+        SCANPY NEXTFLOW PIPELINE - VISUAL WORKFLOW
+================================================================================
+
+INPUT: 10X Genomics Data
+┌─────────────────────────┐
+│   matrix.mtx            │
+│   genes.tsv             │
+│   barcodes.tsv          │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ STEP 1: LOAD_AND_QC                                                 │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Load 10X data                                                     │
+│ • Calculate QC metrics (genes/cell, counts, MT%)                    │
+│ • Filter: min_genes=200, max_genes=2500, max_mt%=5                 │
+│                                                                      │
+│ Parameters: --min_genes, --max_genes, --max_mt_percent             │
+│ Resources: 2 CPUs, 8 GB RAM                                         │
+│                                                                      │
+│ Outputs:                                                            │
+│   • adata_qc.h5ad         (filtered dataset)                        │
+│   • qc_metrics.csv        (before/after stats)                      │
+│   • qc_violin.png         (QC distributions)                        │
+└────────────┬────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ STEP 2: NORMALIZE_AND_HVG                                           │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Normalize to 10,000 counts/cell                                   │
+│ • Log1p transform                                                   │
+│ • Identify highly variable genes (HVGs)                             │
+│ • Regress out: total_counts, pct_counts_mt                          │
+│ • Scale data (max_value=10)                                         │
+│                                                                      │
+│ Parameters: --n_top_genes (default: 2000)                           │
+│ Resources: 2 CPUs, 8 GB RAM                                         │
+│                                                                      │
+│ Outputs:                                                            │
+│   • adata_normalized.h5ad (normalized, scaled data)                 │
+│   • hvg_plot.png          (variable genes plot)                     │
+└────────────┬────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ STEP 3: DIMENSIONALITY_REDUCTION                                    │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Principal Component Analysis (PCA)                                │
+│ • Compute k-nearest neighbor graph                                  │
+│ • UMAP embedding for 2D visualization                               │
+│                                                                      │
+│ Parameters: --n_pcs (50), --n_neighbors (10), --n_pcs_umap (40)    │
+│ Resources: 4 CPUs, 12 GB RAM                                        │
+│                                                                      │
+│ Outputs:                                                            │
+│   • adata_dimred.h5ad     (with PCA & UMAP)                         │
+│   • pca_variance.png      (variance explained)                      │
+└────────────┬────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ STEP 4: CLUSTERING                                                  │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Leiden community detection algorithm                              │
+│ • Assigns cluster labels to each cell                               │
+│ • Resolution controls granularity                                   │
+│                                                                      │
+│ Parameters: --leiden_resolution (default: 1.0)                      │
+│            Higher = more clusters, Lower = fewer clusters           │
+│ Resources: 4 CPUs, 12 GB RAM                                        │
+│                                                                      │
+│ Outputs:                                                            │
+│   • adata_clustered.h5ad  (with cluster assignments)                │
+│   • cluster_sizes.csv     (cells per cluster)                       │
+└────────────┬────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ STEP 5: MARKER_GENES                                                │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Wilcoxon rank-sum test: each cluster vs rest                      │
+│ • Rank genes by fold change and significance                        │
+│ • Extract top markers per cluster                                   │
+│                                                                      │
+│ Parameters: (uses defaults from scanpy)                             │
+│ Resources: 4 CPUs, 12 GB RAM                                        │
+│                                                                      │
+│ Outputs:                                                            │
+│   • adata_with_markers.h5ad    (with DE results)                    │
+│   • marker_genes.csv           (top markers per cluster)            │
+│   • marker_genes_heatmap.png   (heatmap visualization)              │
+└────────────┬────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ STEP 6: ANNOTATE_CELL_TYPES (optional)                              │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Map cluster IDs to biological cell type names                     │
+│ • Based on canonical marker gene expression                         │
+│ • Customizable for different tissues/organisms                      │
+│                                                                      │
+│ Parameters: --annotate_celltypes (true/false)                       │
+│ Resources: 2 CPUs, 8 GB RAM                                         │
+│                                                                      │
+│ Outputs:                                                            │
+│   • adata_annotated.h5ad   (with cell type labels)                  │
+│   • cell_type_counts.csv   (cells per cell type)                    │
+│                                                                      │
+│ Customization: Edit modules/annotate.nf to define mappings          │
+└────────────┬────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ STEP 7: VISUALIZATION                                               │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Generate UMAP plots (clusters, cell types, QC metrics)            │
+│ • Create marker gene dotplots                                       │
+│ • Publication-quality figures                                       │
+│                                                                      │
+│ Parameters: (uses annotated status from step 6)                     │
+│ Resources: 2 CPUs, 8 GB RAM                                         │
+│                                                                      │
+│ Outputs:                                                            │
+│   • umap_clusters.png      (UMAP by cluster)                        │
+│   • umap_cell_types.png    (UMAP by cell type)                      │
+│   • umap_qc_metrics.png    (UMAP by QC metrics)                     │
+│   • marker_dotplot.png     (canonical markers)                      │
+└────────────┬────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ STEP 8: GENERATE_REPORT                                             │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Compile all results into summary reports                          │
+│ • Dataset statistics and QC metrics                                 │
+│ • Cluster/cell type distributions                                   │
+│ • Top marker genes                                                  │
+│ • Analysis parameters                                               │
+│                                                                      │
+│ Resources: 2 CPUs, 8 GB RAM                                         │
+│                                                                      │
+│ Outputs:                                                            │
+│   • analysis_summary.html  (interactive HTML report)                │
+│   • analysis_summary.md    (markdown version)                       │
+└────────────┬────────────────────────────────────────────────────────┘
+             │
+             ▼
+       FINAL OUTPUT
+┌─────────────────────────┐
+│ Complete Analysis       │
+│ ─────────────────────── │
+│ • Annotated data        │
+│ • All visualizations    │
+│ • Summary reports       │
+│ • Execution logs        │
+└─────────────────────────┘
+
+================================================================================
+                         PARAMETER CUSTOMIZATION
+================================================================================
+
+Quality Control:
+  --min_genes 200              Minimum genes per cell
+  --min_cells 3                Minimum cells per gene
+  --max_genes 2500             Maximum genes per cell (doublet removal)
+  --max_mt_percent 5           Maximum mitochondrial percentage
+
+Feature Selection:
+  --n_top_genes 2000           Number of highly variable genes
+
+Dimensionality Reduction:
+  --n_pcs 50                   Principal components to compute
+  --n_neighbors 10             Neighbors for graph construction
+  --n_pcs_umap 40              PCs used for UMAP
+
+Clustering:
+  --leiden_resolution 1.0      Clustering resolution
+                               (0.1-0.5: broad, 1.0-2.0: fine-grained)
+
+Annotation:
+  --annotate_celltypes true    Enable/disable cell type annotation
+
+Resources:
+  --max_cpus 4                 Maximum CPUs per process
+  --max_memory '16.GB'         Maximum memory per process
+  --max_time '4.h'             Maximum time per process
+
+Output:
+  --outdir results             Output directory path
+
+================================================================================
+                           EXECUTION EXAMPLES
+================================================================================
+
+Basic Run:
+  nextflow run main.nf --input /path/to/data --outdir results
+
+Custom Parameters:
+  nextflow run main.nf \
+      --input /path/to/data \
+      --outdir results \
+      --max_genes 3000 \
+      --leiden_resolution 1.5 \
+      --annotate_celltypes true
+
+Resume Failed Run:
+  nextflow run main.nf --input data --outdir results -resume
+
+Generate Execution Reports:
+  nextflow run main.nf \
+      --input data \
+      --outdir results \
+      -with-report report.html \
+      -with-timeline timeline.html \
+      -with-dag flowchart.svg
+
+HPC Cluster (SLURM):
+  nextflow run main.nf \
+      --input data \
+      --outdir results \
+      -profile slurm
+
+================================================================================
+                        MONITORING & DEBUGGING
+================================================================================
+
+Monitor Progress:
+  tail -f .nextflow.log
+
+Check Status:
+  nextflow log
+
+View Specific Run:
+  nextflow log <run_name> -f workdir,status,exit,name
+
+Debug Failed Process:
+  cd work/xx/xxxxxxxxxxxx
+  cat .command.out      # stdout
+  cat .command.err      # stderr
+  cat .command.sh       # command executed
+
+Clean Work Directory:
+  nextflow clean -f
+
+================================================================================

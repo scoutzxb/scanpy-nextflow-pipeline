@@ -1,0 +1,34 @@
+# Nextflow
+work/
+.nextflow*
+results/
+*.html
+*.svg
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+
+# Data
+*.h5ad
+*.mtx
+*.tsv
+*.csv
+*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
