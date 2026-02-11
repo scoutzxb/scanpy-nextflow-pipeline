@@ -1,6 +1,31 @@
 # Scanpy Single-Cell RNA-seq Nextflow Pipeline
 
-A comprehensive Nextflow pipeline for single-cell RNA-seq analysis using Scanpy.
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A523.04.0-brightgreen.svg)](https://www.nextflow.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A comprehensive, production-ready Nextflow pipeline for single-cell RNA-seq analysis using Scanpy.
+
+**Repository**: https://github.com/scoutzxb/scanpy-nextflow-pipeline
+
+## Installation
+
+### Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/scoutzxb/scanpy-nextflow-pipeline.git
+cd scanpy-nextflow-pipeline
+
+# Run with conda environment (recommended)
+nextflow run main.nf -profile conda --input /path/to/10x_data --outdir results
+```
+
+### Prerequisites
+- [Nextflow](https://www.nextflow.io/) >= 23.04.0
+- One of:
+  - Conda/Mamba (recommended)
+  - Docker
+  - Singularity (for HPC)
+  - Python 3.10+ with scanpy installed
 
 ## Features
 
