@@ -1,0 +1,57 @@
+Bootstrap: docker
+From: python:3.12-slim
+
+%labels
+    Author Xiaobin Zheng
+    Version 1.0.0
+    Description Scanpy single-cell RNA-seq analysis pipeline
+
+%help
+    This container provides a complete environment for running the
+    Scanpy single-cell RNA-seq Nextflow pipeline.
+    
+    Usage: singularity run scanpy-pipeline.sif
+
+%post
+    # Update system
+    apt-get update && apt-get install -y \
+        build-essential \
+        git \
+        wget \
+        libxml2-dev \
+        libcairo2-dev \
+        libgit2-dev \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Install Python packages
+    pip install --no-cache-dir \
+        numpy==1.26.3 \
+        pandas==2.1.4 \
+        scipy==1.11.4 \
+        matplotlib==3.8.2 \
+        seaborn==0.13.1 \
+        scanpy==1.10.1 \
+        anndata==0.10.5 \
+        scikit-learn==1.4.0 \
+        umap-learn==0.5.5 \
+        igraph==0.11.4 \
+        leidenalg==0.10.2 \
+        h5py==3.10.0 \
+        tables==3.9.2 \
+        openpyxl==3.1.2 \
+        adjustText==1.0.4 \
+        statsmodels==0.14.1 \
+        numba==0.58.1 \
+        tqdm==4.66.1 \
+        natsort==8.4.0
+    
+    # Set matplotlib backend
+    echo "backend: Agg" > /etc/matplotlibrc
+
+%environment
+    export LC_ALL=C
+    export MPLBACKEND=Agg
+    export NUMBA_CACHE_DIR=/tmp
+
+%runscript
+    exec "$@"
